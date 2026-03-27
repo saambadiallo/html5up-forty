@@ -3,7 +3,7 @@ name: CI-CD Docker Pipeline
 on:
   push:
     branches:
-      - main
+      - main 
 
 env:
   IMAGE_NAME: ci-html
