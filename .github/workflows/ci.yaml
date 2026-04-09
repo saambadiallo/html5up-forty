@@ -15,7 +15,7 @@ jobs:
 
 
   # ==============================
-  # JOB 1 - CI : BUILD + PUSH + SCAN
+  # JOB   BUILD + PUSH + SCAN
   # ===============================
   build:
     runs-on: ubuntu-latest
@@ -31,6 +31,23 @@ jobs:
       - name: Verify image
         run: |
           docker image ls | grep $IMAGE_NAME
+    
+
+  push:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Login DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+  
+      - name: Push image
+        run: |
+          docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
+          
   scan:
     runs-on: ubuntu-latest
     needs: build
@@ -49,22 +66,4 @@ jobs:
           image-ref: intranet-newdeal:1.0.0
           format: table
           exit-code: 0
-    
 
-  push:
-    runs-on: ubuntu-latest
-    needs: scan
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-  
-      - name: Login DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u $DOCKERHUB_USERNAME --password-stdin
-  
-      - name: Push image
-        run: |
-          docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
-
-
-  #hnbv;cn ,n
