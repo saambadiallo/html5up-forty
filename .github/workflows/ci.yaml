@@ -8,7 +8,8 @@ on:
 env:
   IMAGE_NAME: intranet-newdeal
   IMAGE_TAG: 1.0.0
-  DOCKER_REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -32,7 +33,7 @@ jobs:
       - name: Run Trivy scan (BLOCK CRITICAL)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          image-ref: ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: table
           severity: CRITICAL
           vuln-type: os,library
@@ -50,12 +51,12 @@ jobs:
     steps:
       - name: Pull image
         run: |
-          docker pull $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+          docker pull $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
 
       - name: Run container (simulation)
         run: |
           docker run -d -p 80:80 --name intranet-prod \
-          $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+          $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
 
       - name: Verify container
         run: |
