@@ -15,7 +15,7 @@ env:
 jobs:
 
   # ===============================
-  # JOB 1 - SECURITY SCAN
+  # JOB 1 - SECURITY SCANN
   # ===============================
   scan:
     name: scan security 
