@@ -1,7 +1,9 @@
-name: CI Pipeline - intranet-newdeal (branche dev)
+name: CI Pipeline - intranet-newdeal (dev)
+
 on:
   push:
-    branches: [ dev ]
+    branches:
+      - dev
 
 env:
   IMAGE_NAME: intranet-newdeal
@@ -9,60 +11,71 @@ env:
 
 jobs:
 
-  # 🔹 Job 1 : Build de l'image Docker
+  # 🔹 BUILD
   build:
-    name: Build Docker Image
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG .
-
-  
-  # 🔹 Job 3 : Push vers Docker Hub
-  push:
-    name: Push Docker Image to Docker Hub
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Rebuild Docker image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG .
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push image to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG
-
-# 🔹 Job 2 : Scan de l'image avec Trivy
-  scan:
-    name: Scan Docker Image with Trivy
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build image for scanning
-        run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
 
-      - name: Run Trivy scanner
+      - name: Save image (artifact workaround)
+        run: |
+          docker save $IMAGE_NAME:$IMAGE_TAG > image.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+
+
+  # 🔹 SCAN (Trivy)
+  scan:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: |
+          docker load < image.tar
+
+      - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: $IMAGE_NAME:$IMAGE_TAG
+          image-ref: intranet-newdeal:1.0.0
           format: table
-          exit-code: 0           # 0 = ne bloque pas le pipeline si vulnérabilités trouvées【1†L1203-L1206】
-          # Pour bloquer sur CRITICAL : severity: CRITICAL, exit-code: 1
+          exit-code: 0
 
+
+  # 🔹 PUSH
+  push:
+    runs-on: ubuntu-latest
+    needs: scan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG .
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Push image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG
