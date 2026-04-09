@@ -32,31 +32,9 @@ jobs:
         run: |
           docker image ls | grep $IMAGE_NAME
     
-
-  
-  scan:
-    runs-on: ubuntu-latest
-    needs: build
-  
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-  
-      #- name: Build image again
-       # run: |
-     #     docker build -t intranet-newdeal:1.0.0 .
-  
-      - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: intranet-newdeal:1.0.0
-          format: table
-          exit-code: 0
-
-
   push:
     runs-on: ubuntu-latest
-    needs: scan
+    needs: build
   
     steps:
       - uses: actions/checkout@v4
@@ -69,3 +47,22 @@ jobs:
   
       - name: Push image
         run: docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
+
+  
+  scan:
+    runs-on: ubuntu-latest
+    needs: build
+  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: intranet-newdeal:1.0.0
+          format: table
+          exit-code: 0
+
+
+  
