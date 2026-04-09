@@ -8,56 +8,43 @@ on:
 env:
   IMAGE_NAME: intranet-newdeal
   IMAGE_TAG: 1.0.0
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
 
-  # ===============================
-  # JOB 1 - SECURITY SCANN
-  # ===============================
+  # 🔹 1. SCAN SÉCURITÉ
   scan:
-    name: scan security 
     runs-on: ubuntu-latest
 
     steps:
-      - name: Login to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-      - name: Pull image
-        run: |
-          docker pull $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-
-      - name: Run Trivy scan (BLOCK CRITICAL)
-        uses: aquasecurity/trivy-action@master
+      - name: Scan Docker image
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
-          image-ref: ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: table
-          severity: CRITICAL
-          vuln-type: os,library
-          ignore-unfixed: true
-          exit-code: 1
+          exit-code: 1   # 🔥 bloque si vulnérabilité critique
 
-  # ===============================
-  # JOB 2 - DEPLOYMENT
-  # ===============================
+
+  # 🔹 2. DEPLOIEMENT PROD
   deploy:
-    name: Deployment
+    runs-on: runner_prod
     needs: scan
-    runs-on: ubuntu-latest
 
     steps:
+      - name: Login Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
       - name: Pull image
-        run: |
-          docker pull $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-      - name: Run container (simulation)
-        run: |
-          docker run -d -p 80:80 --name intranet-prod \
-          $DOCKERHUB_USERNAME/$IMAGE_NAME:$IMAGE_TAG
+      - name: Stop old container
+        run: docker stop intranet || true
 
-      - name: Verify container
+      - name: Remove old container
+        run: docker rm intranet || true
+
+      - name: Run new container
         run: |
-          docker ps
+          docker run -d \
+            -p 80:80 \
+            --name intranet \
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
