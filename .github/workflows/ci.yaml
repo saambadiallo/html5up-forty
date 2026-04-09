@@ -6,9 +6,9 @@ on:
       - dev
 
 env:
-IMAGE_NAME: intranet-newdeal
-IMAGE_TAG: 1.0.0
-DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  IMAGE_NAME: intranet-newdeal
+  IMAGE_TAG: 1.0.0
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
 
