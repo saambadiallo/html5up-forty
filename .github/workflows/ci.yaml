@@ -30,7 +30,7 @@ jobs:
           docker pull $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
       - name: Run Trivy scan (BLOCK CRITICAL)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: table
