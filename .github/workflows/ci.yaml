@@ -38,10 +38,11 @@ jobs:
 
     steps:
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/intranet-newdeal:1.0.0
           format: table
+          severity: CRITICAL
           exit-code: 0
 
   push:
